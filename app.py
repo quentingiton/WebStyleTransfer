@@ -28,6 +28,13 @@ if source_file and target_file:
                 result_bytes = f.remote(source_bytes, target_bytes, weight, resize_to)
                 st.image(result_bytes, caption="Résultat")
 
+                st.download_button(
+                    label = "Télécharger le résultat",
+                    data = result_bytes,
+                    file_name = "resultat_transfert_style.png",
+                    mime = "image/png"
+                )
+
     elif app_mode == "Transfert de couleur":
          iters = st.sidebar.slider("Nombre d'itérations souhaitées", 10, 100, 40)
          step = st.sidebar.slider("Taille du pas (par itération) souhaité", 0.1, 2.0, 1.0)
@@ -37,3 +44,10 @@ if source_file and target_file:
                 f = modal.Function.lookup("image-transfer", "run_color_transfer")
                 result_bytes = f.remote(source_bytes, target_bytes, iters, step)
                 st.image(result_bytes, caption="Résultat")
+
+                st.download_button(
+                    label = "Télécharger le résultat",
+                    data = result_bytes,
+                    file_name = "resultat_transfert_couleur.png",
+                    mime = "image/png"
+                )
