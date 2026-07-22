@@ -47,9 +47,9 @@ def format_time(total_seconds):
     if hours > 0:
         parts.append(f"{hours} heure{'s' if hours > 1 else ''}")
     if minutes > 0:
-        parts.append(f"{minutes} minute{'s' if minutes > 1 else ''}")
+        parts.append(f"{minutes} min")
     if seconds > 0 or not parts:
-        parts.append(f"{seconds} seconde{'s' if seconds > 1 else ''}")
+        parts.append(f"{seconds} s")
 
     return " ".join(parts)
 
