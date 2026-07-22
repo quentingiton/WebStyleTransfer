@@ -21,7 +21,7 @@ This repository contains a [web application](https://webstyletransfer.streamlit.
 
 ---
 
-## 🚀 Live Application (For Users)
+## Live Application (For Users)
 
 If you simply want to transfer the style or color of an image, you do not need to install anything or create a Modal account. 
 
@@ -33,7 +33,7 @@ If you simply want to transfer the style or color of an image, you do not need t
 
 ---
 
-## 🛠️ Developer Setup (For Replicating)
+## Developer Setup (For Replicating)
 
 If you want to deploy this architecture on your own Modal and Streamlit environments, follow these steps:
 
