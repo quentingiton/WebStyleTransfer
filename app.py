@@ -2,7 +2,7 @@ import streamlit as st
 import modal
 import io
 
-st.title("Image transfer App")
+st.title("Transfert d'images")
 
 app_mode = st.sidebar.selectbox("Choix du mode", ["Transfert de style", "Transfert de couleur"])
 
@@ -18,7 +18,7 @@ if source_file and target_file:
     source_bytes = source_file.getvalue()
     target_bytes = target_file.getvalue()
 
-    if app_mode == "Transfer de style":
+    if app_mode == "Transfert de style":
         weight = st.sidebar.slider("Importance du contenu de l'image source", 0.1, 2, 1.0)
         resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=512)
 
