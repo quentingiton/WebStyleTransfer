@@ -6,11 +6,7 @@ import numpy as np
 import json
 import os
 
-# Rates based on Modal Starter Plan ($0.59/h T4, $0.0473/h CPU, $0.0080/h RAM)
-# Style Transfer Profile: 1 T4 GPU, ~2 CPU Cores, ~4 GiB Memory
 COST_SEC_STYLE = (0.59 / 3600) + (2 * 0.0473 / 3600) + (4 * 0.0080 / 3600)
-
-# Colour Transfer Profile: ~1 CPU Core, ~1 GiB Memory
 COST_SEC_COLOR = (0.0473 / 3600) + (0.0080 / 3600)
 
 BALANCE_FILE = "pseudo_balance.json"
@@ -36,6 +32,27 @@ def deduct_balance(amount):
         json.dump({"balance": new_balance}, f)
     return new_balance
 
+def format_time(total_seconds):
+    total_seconds = int(round(total_seconds))
+    days = total_seconds // 86400
+    total_seconds %= 86400
+    hours = total_seconds // 3600
+    total_seconds %= 3600
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+
+    parts = []
+    if days > 0:
+        parts.append(f"{days} jour{'s' if days > 1 else ''}")
+    if hours > 0:
+        parts.append(f"{hours} heure{'s' if hours > 1 else ''}")
+    if minutes > 0:
+        parts.append(f"{minutes} minute{'s' if minutes > 1 else ''}")
+    if seconds > 0 or not parts:
+        parts.append(f"{seconds} seconde{'s' if seconds > 1 else ''}")
+
+    return " ".join(parts)
+
 def get_time_until_next_month():
     now = datetime.datetime.now()
     if now.month == 12:
@@ -43,7 +60,7 @@ def get_time_until_next_month():
     else:
         next_month = datetime.datetime(now.year, now.month + 1, 1)
     delta = next_month - now
-    return f"{delta.days} jours et {delta.seconds // 3600} heures"
+    return format_time(delta.total_seconds())
 
 def estimate_style_time(original_width, original_height, resize_to):
     # Calculate Aspect Ratio
@@ -114,7 +131,7 @@ if source_file and target_file:
 
         estimated_time, estimated_cost = estimate_style_time(img.width, img.height, resize_to)
         m_col1, m_col2 = st.columns(2)
-        m_col1.metric(label="Temps estimé (T4 GPU)", value=f"~{estimated_time} secondes")
+        m_col1.metric(label="Temps estimé (T4 GPU)", value=f"~{format_time(estimated_time)}")
         m_col2.metric(label="Coût estimé", value=f"~${estimated_cost:.2f}")
 
         if st.button("Lancer le transfert de style"):
@@ -159,7 +176,7 @@ if source_file and target_file:
             iters, apply_reg
             )
         m_col1, m_col2 = st.columns(2)
-        m_col1.metric(label="Temps estimé (CPU)", value=f"~{estimated_time} s")
+        m_col1.metric(label="Temps estimé (CPU)", value=f"~{format_time(estimated_time)}")
         m_col2.metric(label="Coût estimé", value=f"~${estimated_cost:.5f}")
 
         if st.button("Lancer le transfert de couleur"):
