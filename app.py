@@ -1,6 +1,6 @@
 import streamlit as st
 import modal
-import io
+from PIL import Image
 
 st.title("Transfert d'images")
 
@@ -20,7 +20,12 @@ if source_file and target_file:
 
     if app_mode == "Transfert de style":
         weight = st.sidebar.slider("Importance du contenu de l'image source", 0.1, 2.0, 1.0)
-        resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=512)
+
+        img = Image.open(source_file)
+        long_edge = max(img.width, img.height)
+        default_resize = max(256, long_edge)
+
+        resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=default_resize)
 
         if st.button("Lancer le transfert de style"):
             with st.spinner("Transfert en cours..."):
