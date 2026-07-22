@@ -2,6 +2,7 @@ import streamlit as st
 import modal
 from PIL import Image
 import datetime
+import numpy as np
 
 def get_time_until_next_month():
     now = datetime.datetime.now()
