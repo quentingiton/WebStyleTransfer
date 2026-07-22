@@ -29,7 +29,7 @@ if source_file and target_file:
     target_bytes = target_file.getvalue()
 
     if app_mode == "Transfert de style":
-        weight = st.sidebar.slider("Importance du contenu de l'image source", 0.001, 4, 1.0)
+        weight = st.sidebar.slider("Importance du contenu de l'image source", 0.001, 8.0, 1.0)
 
         img = Image.open(source_file)
         long_edge = max(img.width, img.height)
