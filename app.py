@@ -3,6 +3,38 @@ import modal
 from PIL import Image
 import datetime
 import numpy as np
+import json
+import os
+
+# Rates based on Modal Starter Plan ($0.59/h T4, $0.0473/h CPU, $0.0080/h RAM)
+# Style Transfer Profile: 1 T4 GPU, ~2 CPU Cores, ~4 GiB Memory
+COST_SEC_STYLE = (0.59 / 3600) + (2 * 0.0473 / 3600) + (4 * 0.0080 / 3600)
+
+# Colour Transfer Profile: ~1 CPU Core, ~1 GiB Memory
+COST_SEC_COLOR = (0.0473 / 3600) + (0.0080 / 3600)
+
+BALANCE_FILE = "pseudo_balance.json"
+INITIAL_BALANCE = 29.72
+
+def get_balance():
+    if not os.path.exists(BALANCE_FILE):
+        with open(BALANCE_FILE, "w") as f:
+            json.dump({"balance": INITIAL_BALANCE}, f)
+        return INITIAL_BALANCE
+    
+    with open(BALANCE_FILE, "r") as f:
+        try:
+            data = json.load(f)
+            return data.get("balance", INITIAL_BALANCE)
+        except json.JSONDecodeError:
+            return INITIAL_BALANCE
+
+def deduct_balance(amount):
+    current = get_balance()
+    new_balance = max(0.0, current - amount)
+    with open(BALANCE_FILE, "w") as f:
+        json.dump({"balance": new_balance}, f)
+    return new_balance
 
 def get_time_until_next_month():
     now = datetime.datetime.now()
@@ -24,8 +56,11 @@ def estimate_style_time(original_width, original_height, resize_to):
     k_base = 8.0     # Container/CUDA init overhead
     K_conv = 1.8e-4  # Forward/Backward pass time per pixel across all scales
     K_loss = 35.0    # Fixed cost of 200 iterations * S scales of 1024x5000 distmat
-    
-    return round(k_base + (K_conv * P) + K_loss)
+
+    est_time = round(k_base + (K_conv * P) + K_loss)
+    est_cost = est_time * COST_SEC_STYLE
+
+    return est_time, est_cost
 
 def estimate_colour_time(source_width, source_height, target_width, target_height, iters, apply_reg):
     N = source_width * source_height
@@ -40,10 +75,19 @@ def estimate_colour_time(source_width, source_height, target_width, target_heigh
     
     time_iters = iters * 3 * c_sort * (term_N + term_M)
     time_reg = (c_reg * N) if apply_reg else 0.0
-    
-    return round(c_base + time_iters + time_reg, 1)
+
+    est_time = round(c_base + time_iters + time_reg, 1)
+    est_cost = est_time * COST_SEC_COLOR
+
+    return est_time, est_cost
 
 st.title("Transfert d'images")
+
+st.sidebar.header("Portefeuille Modal")
+balance_placeholder = st.sidebar.empty()
+current_balance = get_balance()
+balance_placeholder.metric(label="Solde restant estimé", value=f"${current_balance:.4f}")
+st.sidebar.markdown("---")
 
 app_mode = st.sidebar.selectbox("Choix du mode", ["Transfert de style", "Transfert de couleur"])
 
@@ -68,8 +112,10 @@ if source_file and target_file:
 
         resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=default_resize)
 
-        estimated_time = estimate_style_time(img.width, img.height, resize_to)
-        st.info(f"**Temps estimé sur GPU (T4) :** ~{estimated_time} secondes")
+        estimated_time, estimated_cost = estimate_style_time(img.width, img.height, resize_to)
+        m_col1, m_col2 = st.columns(2)
+        m_col1.metric(label="Temps estimé (T4 GPU)", value=f"~{estimated_time} secondes")
+        m_col2.metric(label="Coût estimé", value=f"~${estimated_cost:.2f}")
 
         if st.button("Lancer le transfert de style"):
             with st.spinner("Transfert en cours..."):
@@ -84,6 +130,10 @@ if source_file and target_file:
                         file_name = "resultat_transfert_style.png",
                         mime = "image/png"
                     )
+
+                    new_balance = deduct_balance(estimated_cost)
+                    balance_placeholder.metric(label="Solde restant estimé", value=f"${new_balance:.4f}")
+
 
                 except Exception as e:
                     error_msg = str(e).lower()
@@ -103,8 +153,14 @@ if source_file and target_file:
         source_img = Image.open(source_file)
         target_image = Image.open(target_file)
 
-        estimated_time = estimate_colour_time(source_img.width, source_img.height, target_image.width, target_image.height, iters, apply_reg)
-        st.info(f"**Temps estimé sur CPU :** ~{estimated_time} secondes")
+        estimated_time, estimated_cost = estimate_colour_time(
+            source_img.width, source_img.height, 
+            target_image.width, target_image.height, 
+            iters, apply_reg
+            )
+        m_col1, m_col2 = st.columns(2)
+        m_col1.metric(label="Temps estimé (CPU)", value=f"~{estimated_time} s")
+        m_col2.metric(label="Coût estimé", value=f"~${estimated_cost:.5f}")
 
         if st.button("Lancer le transfert de couleur"):
             with st.spinner("Transfert en cours..."):
@@ -119,6 +175,9 @@ if source_file and target_file:
                         file_name = "resultat_transfert_couleur.png",
                         mime = "image/png"
                     )
+
+                    new_balance = deduct_balance(estimated_cost)
+                    balance_placeholder.metric(label="Solde restant estimé", value=f"${new_balance:.4f}")
 
                 except Exception as e:
                     error_msg = str(e).lower()
