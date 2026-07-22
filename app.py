@@ -19,7 +19,7 @@ if source_file and target_file:
     target_bytes = target_file.getvalue()
 
     if app_mode == "Transfert de style":
-        weight = st.sidebar.slider("Importance du contenu de l'image source", 0.1, 2, 1.0)
+        weight = st.sidebar.slider("Importance du contenu de l'image source", 0.1, 2.0, 1.0)
         resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=512)
 
         if st.button("Lancer le transfert de style"):
