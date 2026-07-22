@@ -1,10 +1,10 @@
-import streamlit as st
+import os
+import json
 import modal
-from PIL import Image
 import datetime
 import numpy as np
-import json
-import os
+from PIL import Image
+import streamlit as st
 
 COST_SEC_STYLE = (0.59 / 3600) + (2 * 0.0473 / 3600) + (4 * 0.0080 / 3600)
 COST_SEC_COLOR = (0.0473 / 3600) + (0.0080 / 3600)

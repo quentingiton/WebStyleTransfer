@@ -1,5 +1,5 @@
-import modal
 import io
+import modal
 
 image = (
     modal.Image.debian_slim()
