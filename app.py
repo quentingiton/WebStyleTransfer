@@ -1,6 +1,16 @@
 import streamlit as st
 import modal
 from PIL import Image
+import datetime
+
+def get_time_until_next_month():
+    now = datetime.datetime.now()
+    if now.month == 12:
+        next_month = datetime.datetime(now.year + 1, 1, 1)
+    else:
+        next_month = datetime.datetime(now.year, now.month + 1, 1)
+    delta = next_month - now
+    return f"{delta.days} jours et {delta.seconds // 3600} heures"
 
 st.title("Transfert d'images")
 
@@ -19,7 +29,7 @@ if source_file and target_file:
     target_bytes = target_file.getvalue()
 
     if app_mode == "Transfert de style":
-        weight = st.sidebar.slider("Importance du contenu de l'image source", 0.1, 2.0, 1.0)
+        weight = st.sidebar.slider("Importance du contenu de l'image source", 0.001, 4, 1.0)
 
         img = Image.open(source_file)
         long_edge = max(img.width, img.height)
@@ -29,30 +39,54 @@ if source_file and target_file:
 
         if st.button("Lancer le transfert de style"):
             with st.spinner("Transfert en cours..."):
-                f = modal.Function.from_name("image-transfer", "run_style_transfer")
-                result_bytes = f.remote(source_bytes, target_bytes, weight, resize_to)
-                st.image(result_bytes, caption="Résultat")
+                try:
+                    f = modal.Function.from_name("image-transfer", "run_style_transfer")
+                    result_bytes = f.remote(source_bytes, target_bytes, weight, resize_to)
+                    st.image(result_bytes, caption="Résultat")
 
-                st.download_button(
-                    label = "Télécharger le résultat",
-                    data = result_bytes,
-                    file_name = "resultat_transfert_style.png",
-                    mime = "image/png"
-                )
+                    st.download_button(
+                        label = "Télécharger le résultat",
+                        data = result_bytes,
+                        file_name = "resultat_transfert_style.png",
+                        mime = "image/png"
+                    )
+
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if "credit" in error_msg  or "exhausted" in error_msg or "limit" in error_msg:
+                        st.error(
+                            f"Quota mensuel Modal dépassé. Les transferts seront de nouveau "
+                            f"disponibles dans **{get_time_until_next_month()}**"
+                        )
+                    else:
+                        st.error(f"Une erreur inattendue est survenue : {e}")
 
     elif app_mode == "Transfert de couleur":
+         st.info("Temps estimé : moins de 30 secondes.")
          iters = st.sidebar.slider("Nombre d'itérations souhaitées", 10, 100, 40)
          step = st.sidebar.slider("Taille du pas (par itération) souhaité", 0.1, 2.0, 1.0)
+         apply_reg = st.sidebar.checkbox("Appliquer la régularisation", value=False)
 
          if st.button("Lancer le transfert de couleur"):
             with st.spinner("Transfert en cours..."):
-                f = modal.Function.from_name("image-transfer", "run_color_transfer")
-                result_bytes = f.remote(source_bytes, target_bytes, iters, step)
-                st.image(result_bytes, caption="Résultat")
+                try:
+                    f = modal.Function.from_name("image-transfer", "run_color_transfer")
+                    result_bytes = f.remote(source_bytes, target_bytes, iters, step, apply_reg)
+                    st.image(result_bytes, caption="Résultat")
 
-                st.download_button(
-                    label = "Télécharger le résultat",
-                    data = result_bytes,
-                    file_name = "resultat_transfert_couleur.png",
-                    mime = "image/png"
-                )
+                    st.download_button(
+                        label = "Télécharger le résultat",
+                        data = result_bytes,
+                        file_name = "resultat_transfert_couleur.png",
+                        mime = "image/png"
+                    )
+
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if "credit" in error_msg  or "exhausted" in error_msg or "limit" in error_msg:
+                        st.error(
+                            f"Quota mensuel Modal dépassé. Les transferts seront de nouveau "
+                            f"disponibles dans **{get_time_until_next_month()}**"
+                        )
+                    else:
+                        st.error(f"Une erreur inattendue est survenue : {e}")

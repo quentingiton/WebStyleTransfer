@@ -26,7 +26,7 @@ def run_style_transfer(source_bytes: bytes, style_bytes: bytes, weight: float, r
     return out_buf.getvalue()
 
 @app.function()
-def run_color_transfer(source_bytes: bytes, target_bytes: bytes, iters: int, step: float) -> bytes:
+def run_color_transfer(source_bytes: bytes, target_bytes: bytes, iters: int, step: float, apply_reg: bool) -> bytes:
     import colour_transfer
     import PIL.Image
     import numpy as np
@@ -38,6 +38,9 @@ def run_color_transfer(source_bytes: bytes, target_bytes: bytes, iters: int, ste
     target_np = np.array(target_pil).astype(np.float32) / 255.0
     
     out_np, _ = colour_transfer.color_cloud_transfer_sliced(source_np, target_np, n_iter=iters, step=step)
+
+    if apply_reg:
+        out_np = colour_transfer.regularize(source_np, out_np, r=20, eps=1e-4)
     
     out_uint8 = colour_transfer.to_uint8(out_np)
     out_pil = PIL.Image.fromarray(out_uint8)
