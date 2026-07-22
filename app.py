@@ -12,6 +12,36 @@ def get_time_until_next_month():
     delta = next_month - now
     return f"{delta.days} jours et {delta.seconds // 3600} heures"
 
+def estimate_style_time(original_width, original_height, resize_to):
+    # Calculate Aspect Ratio
+    long_edge = max(original_width, original_height)
+    short_edge = min(original_width, original_height)
+    A = long_edge / short_edge if short_edge > 0 else 1.0
+    
+    P = (resize_to ** 2) / A
+    
+    k_base = 8.0     # Container/CUDA init overhead
+    K_conv = 1.8e-4  # Forward/Backward pass time per pixel across all scales
+    K_loss = 35.0    # Fixed cost of 200 iterations * S scales of 1024x5000 distmat
+    
+    return round(k_base + (K_conv * P) + K_loss)
+
+def estimate_colour_time(source_width, source_height, target_width, target_height, iters, apply_reg):
+    N = source_width * source_height
+    M = target_width * target_height
+    
+    c_base = 0.5
+    c_sort = 1.2e-7 # seconds per N log N operation
+    c_reg = 4.5e-7  # seconds per pixel for uniform_filter
+    
+    term_N = N * np.log2(N)
+    term_M = M * np.log2(M)
+    
+    time_iters = iters * 3 * c_sort * (term_N + term_M)
+    time_reg = (c_reg * N) if apply_reg else 0.0
+    
+    return round(c_base + time_iters + time_reg, 1)
+
 st.title("Transfert d'images")
 
 app_mode = st.sidebar.selectbox("Choix du mode", ["Transfert de style", "Transfert de couleur"])
@@ -36,6 +66,9 @@ if source_file and target_file:
         default_resize = max(256, long_edge)
 
         resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=default_resize)
+
+        estimated_sec = estimate_style_time(resize_to)
+        st.info(f"**Temps estimé sur GPU (T4) :** ~{estimate_style_time(img.width, img.height, resize_to)} secondes")
 
         if st.button("Lancer le transfert de style"):
             with st.spinner("Transfert en cours..."):
@@ -62,12 +95,18 @@ if source_file and target_file:
                         st.error(f"Une erreur inattendue est survenue : {e}")
 
     elif app_mode == "Transfert de couleur":
-         st.info("Temps estimé : moins de 30 secondes.")
-         iters = st.sidebar.slider("Nombre d'itérations souhaitées", 10, 100, 40)
-         step = st.sidebar.slider("Taille du pas (par itération) souhaité", 0.1, 2.0, 1.0)
-         apply_reg = st.sidebar.checkbox("Appliquer la régularisation", value=False)
+        iters = st.sidebar.slider("Nombre d'itérations souhaitées", 10, 100, 40)
+        step = st.sidebar.slider("Taille du pas (par itération) souhaité", 0.1, 2.0, 1.0)
+        apply_reg = st.sidebar.checkbox("Appliquer la régularisation", value=False)
 
-         if st.button("Lancer le transfert de couleur"):
+        source_img = Image.open(source_file)
+        target_image = Image.open(target_file)
+
+
+        estimated_sec = estimate_colour_time(iters, apply_reg)
+        st.info(f"**Temps estimé sur CPU :** ~{estimate_colour_time(source_img.width, source_img.height, target_image.width, target_image.height, iters, apply_reg)} secondes")
+
+        if st.button("Lancer le transfert de couleur"):
             with st.spinner("Transfert en cours..."):
                 try:
                     f = modal.Function.from_name("image-transfer", "run_color_transfer")
