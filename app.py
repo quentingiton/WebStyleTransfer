@@ -29,7 +29,7 @@ if source_file and target_file:
 
         if st.button("Lancer le transfert de style"):
             with st.spinner("Transfert en cours..."):
-                f = modal.Function.lookup("image-transfer", "run_style_transfer")
+                f = modal.Function.froom_name("image-transfer", "run_style_transfer")
                 result_bytes = f.remote(source_bytes, target_bytes, weight, resize_to)
                 st.image(result_bytes, caption="Résultat")
 
@@ -46,7 +46,7 @@ if source_file and target_file:
 
          if st.button("Lancer le transfert de couleur"):
             with st.spinner("Transfert en cours..."):
-                f = modal.Function.lookup("image-transfer", "run_color_transfer")
+                f = modal.Function.from_name("image-transfer", "run_color_transfer")
                 result_bytes = f.remote(source_bytes, target_bytes, iters, step)
                 st.image(result_bytes, caption="Résultat")
 
