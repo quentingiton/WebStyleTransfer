@@ -67,8 +67,8 @@ if source_file and target_file:
 
         resize_to = st.sidebar.number_input("Réduire l'image à (min 256) pixels", min_value=256, value=default_resize)
 
-        estimated_sec = estimate_style_time(resize_to)
-        st.info(f"**Temps estimé sur GPU (T4) :** ~{estimate_style_time(img.width, img.height, resize_to)} secondes")
+        estimated_time = estimate_style_time(img.width, img.height, resize_to)
+        st.info(f"**Temps estimé sur GPU (T4) :** ~{estimated_time} secondes")
 
         if st.button("Lancer le transfert de style"):
             with st.spinner("Transfert en cours..."):
@@ -102,9 +102,8 @@ if source_file and target_file:
         source_img = Image.open(source_file)
         target_image = Image.open(target_file)
 
-
-        estimated_sec = estimate_colour_time(iters, apply_reg)
-        st.info(f"**Temps estimé sur CPU :** ~{estimate_colour_time(source_img.width, source_img.height, target_image.width, target_image.height, iters, apply_reg)} secondes")
+        estimated_time = estimate_colour_time(source_img.width, source_img.height, target_image.width, target_image.height, iters, apply_reg)
+        st.info(f"**Temps estimé sur CPU :** ~{estimated_time} secondes")
 
         if st.button("Lancer le transfert de couleur"):
             with st.spinner("Transfert en cours..."):
